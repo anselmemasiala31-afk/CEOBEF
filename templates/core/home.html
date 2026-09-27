@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+<section class="hero-band">
+  <div class="hero-grid">
+    <div class="hero-copy" data-reveal>
+      <span class="eyebrow"><span class="eyebrow-dot"></span> Bas-Fleuve · République démocratique du Congo</span>
+      <h1>Une communauté.<br><span>Des parcours.</span><br>Un avenir partagé.</h1>
+      <p>Le lien entre les étudiants originaires de Bas-Fleuve, où qu’ils poursuivent leurs études.</p>
+      <div class="hero-actions"><a class="button button-lime" href="{% url 'accounts:register' %}">Rejoindre la communauté <span aria-hidden="true">↗</span></a><a class="text-link text-link-light" href="{% url 'community:announcements' %}">Découvrir nos actualités</a></div>
+      <div class="hero-proof"><div class="proof-avatars"><i>MB</i><i>NK</i><i>AM</i><i>+</i></div><span>La jeunesse de Bas-Fleuve, ensemble</span></div>
+    </div>
+    <div class="hero-art" data-reveal data-delay="120">
+      <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+      <div class="hero-sun"></div><div class="hero-land land-back"></div><div class="hero-land land-front"></div>
+      <div class="hero-stat"><span class="stat-spark">✳</span><div><strong>Un même horizon</strong><small>Grandir ensemble, partout</small></div></div>
+      <div class="hero-location"><span class="location-pin">●</span><span>Bas-Fleuve<br><small>Kongo Central</small></span></div>
+      <div class="hero-index">01 <span>/</span> COMMUNAUTÉ</div>
+    </div>
+  </div>
+  <div class="hero-bottom"><span>ÉTUDIER · S’ENTRAIDER · RAYONNER</span><span class="scroll-hint">Défiler <b>↓</b></span></div>
+</section>
+<section class="home-intro section-pad">
+  <div class="section-heading" data-reveal><span class="eyebrow eyebrow-blue">LA COMMUNAUTÉ</span><h2>Nos liens traversent<br>les campus.</h2></div>
+  <p class="intro-copy" data-reveal>CEOBEF rassemble les étudiants, valorise les réussites et crée des occasions concrètes d’apprendre, de partager et de servir notre région.</p>
+  <div class="value-list"><article data-reveal><span class="value-number">01</span><div><h3>Se retrouver</h3><p>Un réseau vivant pour les étudiants originaires de Bas-Fleuve.</p></div><span class="value-arrow">↗</span></article><article data-reveal><span class="value-number">02</span><div><h3>Faire grandir</h3><p>Des rencontres, des ressources et des opportunités qui circulent.</p></div><span class="value-arrow">↗</span></article><article data-reveal><span class="value-number">03</span><div><h3>Construire ensemble</h3><p>Des initiatives étudiantes au service de toute la communauté.</p></div><span class="value-arrow">↗</span></article></div>
+</section>
+<section class="home-events section-pad">
+  <div class="section-title-row"><div><span class="eyebrow eyebrow-blue">À L’AGENDA</span><h2>Les prochains rendez-vous</h2></div><a class="text-link" href="{% url 'events:list' %}">Tous les événements <span>↗</span></a></div>
+  <div class="event-preview-grid">{% for event in events %}<a class="event-preview" href="{% url 'events:detail' event.slug %}"><div class="event-date"><strong>{{ event.starts_at|date:'d' }}</strong><span>{{ event.starts_at|date:'M' }}</span></div><div><span class="event-location">{{ event.location }}</span><h3>{{ event.title }}</h3><p>{{ event.summary }}</p></div><span class="value-arrow">↗</span></a>{% empty %}<div class="empty-line"><span class="empty-spark">✳</span><p>Les prochains rendez-vous de la communauté seront annoncés ici.</p></div>{% endfor %}</div>
+</section>
+<section class="home-news section-pad">
+  <div class="section-title-row"><div><span class="eyebrow eyebrow-blue">LE FIL DE LA COMMUNAUTÉ</span><h2>À la une</h2></div><a class="text-link" href="{% url 'community:announcements' %}">Toutes les actualités <span>↗</span></a></div>
+  <div class="news-preview-grid">{% for item in news %}<article class="news-preview">{% if item.image %}<img src="{% url 'core:public-image' 'announcement' item.pk %}" alt="{{ item.title }}" loading="lazy">{% else %}<div class="news-placeholder"><span>{{ item.created_at|date:'d' }}</span><small>{{ item.category|upper }}</small></div>{% endif %}<div class="news-meta"><span>{{ item.get_category_display }}</span><time>{{ item.created_at|date:'d F Y' }}</time></div><h3>{{ item.title }}</h3><p>{{ item.body|truncatewords:22 }}</p></article>{% empty %}<div class="empty-line"><span class="empty-spark">✳</span><p>Les nouvelles de CEOBEF apparaîtront ici.</p></div>{% endfor %}</div>
+</section>
+<section class="join-band"><div><span class="eyebrow">LE PROCHAIN CHAPITRE S’ÉCRIT ENSEMBLE</span><h2>Votre place est ici.</h2></div><a class="button button-white" href="{% url 'accounts:register' %}">Créer mon compte <span>↗</span></a></section>
+{% endblock %}
