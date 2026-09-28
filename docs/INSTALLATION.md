@@ -41,9 +41,9 @@ Le fichier `render.yaml` définit un service web Python `free`, Daphne/ASGI, un 
 1. Pousser la branche `main` vers GitHub.
 2. Dans Render, choisir **New > Blueprint**, connecter le dépôt GitHub CEOBEF et sélectionner `render.yaml`.
 3. Vérifier les ressources proposées puis créer le Blueprint. Render crée le PostgreSQL et le service web dans la même région ; `DATABASE_URL` est relié par `fromDatabase`.
-4. Lors de la première synchronisation, saisir les trois valeurs demandées pour `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` et `DEFAULT_FROM_EMAIL`. Pour Google, utiliser une adresse Gmail organisationnelle et un mot de passe d’application, jamais le mot de passe principal.
-5. Attendre le build, puis ouvrir `https://<nom-du-service>.onrender.com`. Les migrations sont exécutées par `startCommand` à chaque démarrage ; `collectstatic` est exécuté durant le build.
-6. Après déploiement, vérifier la page d’accueil, un chemin `/static/...`, la connexion, l’administration et un WebSocket `/ws/notifications/` avec une session membre. Le plan gratuit peut s’endormir ; le premier réveil peut prendre environ une minute.
+4. Lors de la première synchronisation, saisir les valeurs demandées pour le compte SMTP et les variables temporaires `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` et `DJANGO_SUPERUSER_PASSWORD`. Utiliser un mot de passe d’application Google, jamais le mot de passe principal. Le mot de passe administrateur est consommé par le hook initial, jamais commité.
+5. Attendre le build et l’initialisation, puis ouvrir `https://<nom-du-service>.onrender.com`. Les migrations sont exécutées par `startCommand` à chaque démarrage ; `collectstatic` est exécuté durant le build et `initialDeployHook` crée le premier superutilisateur sans exiger de shell.
+6. Après confirmation de la connexion `/admin/`, supprimer les trois variables `DJANGO_SUPERUSER_*` du service Render et ne pas les synchroniser à nouveau. Vérifier la page d’accueil, un chemin `/static/...`, la connexion, l’administration et un WebSocket `/ws/notifications/` avec une session membre. Le plan gratuit peut s’endormir ; le premier réveil peut prendre environ une minute.
 
 ### Limites bloquantes du plan gratuit
 
