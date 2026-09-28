@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
+PYTHONANYWHERE = os.getenv('PYTHONANYWHERE', 'false').lower() == 'true'
 
 
 # Quick-start development settings - unsuitable for production
@@ -112,11 +113,11 @@ if DATABASE_URL.startswith(('postgres://', 'postgresql://')):
         'OPTIONS': {'sslmode': os.getenv('DB_SSLMODE', 'prefer')},
     }}
 else:
-    if not DEBUG:
+    if not DEBUG and not PYTHONANYWHERE:
         raise RuntimeError('DATABASE_URL must point to PostgreSQL when DJANGO_DEBUG is false.')
     DATABASES = {'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': Path(os.getenv('SQLITE_PATH', BASE_DIR / 'db.sqlite3')),
     }}
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -156,15 +157,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = '/static/'
+STATIC_ROOT = Path(os.getenv('STATIC_ROOT', BASE_DIR / 'staticfiles'))
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'private-media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', BASE_DIR / 'private-media'))
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
@@ -175,12 +176,12 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'CEOBEF <noreply@ceobef.org>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-if not DEBUG and (EMAIL_BACKEND != 'django.core.mail.backends.smtp.EmailBackend' or not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+if not DEBUG and not PYTHONANYWHERE and (EMAIL_BACKEND != 'django.core.mail.backends.smtp.EmailBackend' or not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
     raise RuntimeError('A configured SMTP backend and Gmail credentials are required when DJANGO_DEBUG is false.')
 
 REDIS_URL = os.getenv('REDIS_URL', '')
 CHANNEL_LAYER = os.getenv('CHANNEL_LAYER', '').lower()
-if not DEBUG and not REDIS_URL and CHANNEL_LAYER != 'memory':
+if not DEBUG and not PYTHONANYWHERE and not REDIS_URL and CHANNEL_LAYER != 'memory':
     raise RuntimeError('REDIS_URL is required when DJANGO_DEBUG is false.')
 if REDIS_URL:
     CHANNEL_LAYERS = {'default': {'BACKEND': 'channels_redis.core.RedisChannelLayer', 'CONFIG': {'hosts': [REDIS_URL]}}}

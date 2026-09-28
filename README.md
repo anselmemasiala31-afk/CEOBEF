@@ -87,4 +87,6 @@ Lire [docs/INSTALLATION.md](docs/INSTALLATION.md) pour les variables, PostgreSQL
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) pour les relations entre tables, le RBAC et les flux WebSocket/SMTP.
 
+Pour une démonstration WSGI sur PythonAnywhere, consulter [docs/deployment.md](docs/deployment.md), [docs/pythonanywhere_setup.md](docs/pythonanywhere_setup.md) et le [guide complet](DEPLOY_CEOBEF_PYTHONANYWHERE.md). PythonAnywhere Free ne prend pas en charge le transport WebSocket requis par Channels ; cette offre ne peut donc pas reproduire toute la messagerie temps réel locale.
+
 Le Blueprint [render.yaml](render.yaml) prépare un déploiement Render Free de démonstration. Il n’est pas adapté à la conservation des données : PostgreSQL expire après 30 jours, les médias sont éphémères et Render bloque le SMTP Gmail sortant sur le port 587. Consulter les limitations et la procédure avant de connecter le dépôt.
