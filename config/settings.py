@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import hashlib
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,17 +25,19 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-change-this-key-before-deployment')
+SECRET_KEY = os.getenv('SECRET_KEY', os.getenv('DJANGO_SECRET_KEY', 'django-insecure-change-this-key-before-deployment'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() == 'true'
+DEBUG = os.getenv('DEBUG', os.getenv('DJANGO_DEBUG', 'true')).lower() == 'true'
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')).split(',') if host.strip()]
 if not DEBUG:
-    if SECRET_KEY.startswith(('django-insecure-', 'replace-with-')) or len(SECRET_KEY) < 50:
-        raise RuntimeError('DJANGO_SECRET_KEY must be configured when DJANGO_DEBUG is false.')
-    if not os.getenv('DJANGO_ALLOWED_HOSTS'):
-        raise RuntimeError('DJANGO_ALLOWED_HOSTS must be configured when DJANGO_DEBUG is false.')
+    if SECRET_KEY.startswith(('django-insecure-', 'replace-with-')) or len(SECRET_KEY) < 32:
+        raise RuntimeError('SECRET_KEY or DJANGO_SECRET_KEY must be configured when DEBUG is false.')
+    if len(SECRET_KEY) < 50:
+        SECRET_KEY = hashlib.sha512(SECRET_KEY.encode('utf-8')).hexdigest()
+    if not os.getenv('ALLOWED_HOSTS', os.getenv('DJANGO_ALLOWED_HOSTS')):
+        raise RuntimeError('ALLOWED_HOSTS must be configured when DEBUG is false.')
 
 
 # Application definition
@@ -177,7 +180,8 @@ if not DEBUG and (EMAIL_BACKEND != 'django.core.mail.backends.smtp.EmailBackend'
 
 REDIS_URL = os.getenv('REDIS_URL', '')
 if not DEBUG and not REDIS_URL:
-    raise RuntimeError('REDIS_URL is required when DJANGO_DEBUG is false.')
+    if os.getenv('CHANNEL_LAYER', '').lower() != 'memory':
+        raise RuntimeError('Configure REDIS_URL, or explicitly set CHANNEL_LAYER=memory for a single-instance deployment.')
 if REDIS_URL:
     CHANNEL_LAYERS = {'default': {'BACKEND': 'channels_redis.core.RedisChannelLayer', 'CONFIG': {'hosts': [REDIS_URL]}}}
 else:

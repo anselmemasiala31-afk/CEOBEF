@@ -34,20 +34,41 @@ Si PowerShell bloque l’activation de l’environnement, utilisez directement `
 
 Les fichiers `.env`, SQLite, médias téléversés et environnement virtuel sont ignorés par Git.
 
+## Déploiement Render gratuit
+
+Le fichier `render.yaml` définit un service web Python `free`, Daphne/ASGI, un PostgreSQL `free`, la collecte WhiteNoise au build et les migrations au démarrage. Il référence les valeurs sensibles depuis Render (`generateValue`, `sync: false` et `fromDatabase`) ; aucun secret ou identifiant DB n’est commité. Render Free ne permet pas d’attacher un disque persistant au service web : cette configuration est une démo/hébergement d’essai et non un déploiement durable pour des données d’étudiants.
+
+1. Pousser la branche `main` vers GitHub.
+2. Dans Render, choisir **New > Blueprint**, connecter le dépôt GitHub CEOBEF et sélectionner `render.yaml`.
+3. Vérifier les ressources proposées puis créer le Blueprint. Render crée le PostgreSQL et le service web dans la même région ; `DATABASE_URL` est relié par `fromDatabase`.
+4. Lors de la première synchronisation, saisir les trois valeurs demandées pour `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` et `DEFAULT_FROM_EMAIL`. Pour Google, utiliser une adresse Gmail organisationnelle et un mot de passe d’application, jamais le mot de passe principal.
+5. Attendre le build, puis ouvrir `https://<nom-du-service>.onrender.com`. Les migrations sont exécutées par `startCommand` à chaque démarrage ; `collectstatic` est exécuté durant le build.
+6. Après déploiement, vérifier la page d’accueil, un chemin `/static/...`, la connexion, l’administration et un WebSocket `/ws/notifications/` avec une session membre. Le plan gratuit peut s’endormir ; le premier réveil peut prendre environ une minute.
+
+### Limites bloquantes du plan gratuit
+
+- **PostgreSQL Free expire après 30 jours**, est limité à 1 Go et ne dispose pas de sauvegardes Render. Il faut migrer vers une base durable/payante ou accepter la perte/suppression des données après la période de grâce. Ne pas y placer des dossiers, profils ou cotisations étudiants sans accord et sauvegarde externe.
+- **Le système de fichiers du service web est éphémère** : photos de profil, images, documents, reçus et pièces jointes stockés dans `private-media/` sont perdus au spin-down, redémarrage ou redeploy. Le service Free ne peut pas avoir de disque persistant. Pour conserver les médias, ajouter un stockage objet externe durable et tester sa sécurité avant l’ouverture aux membres.
+- **Render Free bloque les connexions sortantes SMTP sur les ports 25, 465 et 587.** Les connexions Gmail SMTP configurées par le Blueprint ne peuvent donc pas être délivrées depuis un web service gratuit, même avec les bons identifiants. Pour Gmail SMTP, il faut un plan Render autorisant cette sortie ou un relais externe ; un fournisseur d’e-mail avec API HTTPS nécessite un changement d’intégration.
+- `CHANNEL_LAYER=memory` est délibérément utilisé pour la seule instance gratuite, sans Redis. Les WebSockets fonctionnent dans le processus unique, mais les groupes ne sont pas partagés, leur état n’est pas durable et tout redémarrage rompt les connexions. Pour plusieurs workers ou une disponibilité supérieure, configurer Redis et un plan adapté.
+- Les instances gratuites peuvent s’endormir, redémarrer ou atteindre leurs quotas. Elles sont destinées à l’essai, pas aux données sensibles ni à une plateforme communautaire de production.
+
+Pour une exploitation réelle, utiliser PostgreSQL sauvegardé, médias persistants privés, Redis, un service d’e-mail dont l’egress est permis, HTTPS et un plan de calcul sans limites gratuites. Les migrations au démarrage permettent le déploiement gratuit, mais une stratégie de migration séparée/pré-déploiement est préférable sur un environnement payant à plusieurs instances.
+
 ## Variables d’environnement
 
 Copier `.env.example` vers `.env`. Ne jamais ajouter `.env` à un dépôt ou exposer un mot de passe d’application dans les logs.
 
-- `DJANGO_SECRET_KEY` : valeur aléatoire unique, secrète et persistante pour l’environnement.
-- `DJANGO_DEBUG` : `false` en production.
-- `DJANGO_ALLOWED_HOSTS` : noms d’hôte séparés par des virgules, sans schéma.
+- `DJANGO_SECRET_KEY` ou `SECRET_KEY` : valeur aléatoire unique, secrète et persistante pour l’environnement.
+- `DJANGO_DEBUG` ou `DEBUG` : `false` en production.
+- `DJANGO_ALLOWED_HOSTS` ou `ALLOWED_HOSTS` : noms d’hôte séparés par des virgules, sans schéma.
 - `CSRF_TRUSTED_ORIGINS` : origines HTTPS complètes séparées par des virgules.
 - `DJANGO_SECURE_SSL_REDIRECT` : activer derrière un proxy TLS correctement configuré.
 - `DJANGO_TRUST_PROXY_SSL` : définir à `true` uniquement si un reverse proxy de confiance efface et réécrit `X-Forwarded-Proto`.
 - `SECURE_HSTS_SECONDS` : durée HSTS ; la valeur de production par défaut est un an.
 - `DATABASE_URL` : vide en local pour SQLite ; URL `postgresql://user:password@host:5432/database` en production.
 - `DB_SSLMODE` : mode SSL PostgreSQL, généralement `require` chez l’hébergeur.
-- `REDIS_URL` : obligatoire quand `DJANGO_DEBUG=false`, par exemple `redis://redis:6379/0`.
+- `REDIS_URL` : Redis pour plusieurs processus, par exemple `redis://redis:6379/0`. Sans Redis en production, `CHANNEL_LAYER=memory` doit être explicitement défini et n’est pris en charge que pour une instance unique.
 - `EMAIL_BACKEND` : backend console local ou `django.core.mail.backends.smtp.EmailBackend` pour Gmail.
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` : paramètres SMTP organisationnels.
 
@@ -76,7 +97,7 @@ python manage.py collectstatic --noinput
 python manage.py test
 ```
 
-Le serveur d’application doit lancer `config.asgi:application` avec Daphne ou un serveur ASGI compatible, derrière un reverse proxy TLS qui prend en charge les upgrades WebSocket. WhiteNoise sert les fichiers statiques collectés. Ne jamais exposer `private-media/` directement via le serveur web. Quand `DJANGO_DEBUG=false`, les réglages refusent de démarrer sans secret, hôtes, PostgreSQL, Redis, SMTP Gmail et redirection HTTPS configurés.
+Le serveur d’application doit lancer `config.asgi:application` avec Daphne ou un serveur ASGI compatible, derrière un reverse proxy TLS qui prend en charge les upgrades WebSocket. WhiteNoise sert les fichiers statiques collectés. Ne jamais exposer `private-media/` directement via le serveur web. Quand `DEBUG=false`, les réglages refusent de démarrer sans secret, hôtes, PostgreSQL, SMTP configuré et redirection HTTPS ; `REDIS_URL` est nécessaire pour plusieurs workers, alors que `CHANNEL_LAYER=memory` est explicitement toléré pour un seul processus.
 
 Les photos publiques passent par la vue contrôlée `core:public-image`. Les documents, reçus et pièces jointes ne sont transmis qu’après vérification de l’identité, du rôle ou de l’appartenance à la conversation. Conserver `private-media/` sur un stockage persistant chiffré et sauvegardé ; mettre en œuvre rétention, antivirus et restauration testée avant une exploitation réelle.
 
