@@ -10,8 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-import os
 import hashlib
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -33,11 +33,11 @@ DEBUG = os.getenv('DEBUG', os.getenv('DJANGO_DEBUG', 'true')).lower() == 'true'
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')).split(',') if host.strip()]
 if not DEBUG:
     if SECRET_KEY.startswith(('django-insecure-', 'replace-with-')) or len(SECRET_KEY) < 32:
-        raise RuntimeError('SECRET_KEY or DJANGO_SECRET_KEY must be configured when DEBUG is false.')
+        raise RuntimeError('DJANGO_SECRET_KEY must be configured when DJANGO_DEBUG is false.')
     if len(SECRET_KEY) < 50:
         SECRET_KEY = hashlib.sha512(SECRET_KEY.encode('utf-8')).hexdigest()
     if not os.getenv('ALLOWED_HOSTS', os.getenv('DJANGO_ALLOWED_HOSTS')):
-        raise RuntimeError('ALLOWED_HOSTS must be configured when DEBUG is false.')
+        raise RuntimeError('DJANGO_ALLOWED_HOSTS must be configured when DJANGO_DEBUG is false.')
 
 
 # Application definition
@@ -179,9 +179,9 @@ if not DEBUG and (EMAIL_BACKEND != 'django.core.mail.backends.smtp.EmailBackend'
     raise RuntimeError('A configured SMTP backend and Gmail credentials are required when DJANGO_DEBUG is false.')
 
 REDIS_URL = os.getenv('REDIS_URL', '')
-if not DEBUG and not REDIS_URL:
-    if os.getenv('CHANNEL_LAYER', '').lower() != 'memory':
-        raise RuntimeError('Configure REDIS_URL, or explicitly set CHANNEL_LAYER=memory for a single-instance deployment.')
+CHANNEL_LAYER = os.getenv('CHANNEL_LAYER', '').lower()
+if not DEBUG and not REDIS_URL and CHANNEL_LAYER != 'memory':
+    raise RuntimeError('REDIS_URL is required when DJANGO_DEBUG is false.')
 if REDIS_URL:
     CHANNEL_LAYERS = {'default': {'BACKEND': 'channels_redis.core.RedisChannelLayer', 'CONFIG': {'hosts': [REDIS_URL]}}}
 else:

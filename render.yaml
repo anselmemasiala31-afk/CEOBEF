@@ -6,9 +6,12 @@ services:
     region: oregon
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: python manage.py migrate --noinput && daphne -b 0.0.0.0 -p $PORT config.asgi:application
-    initialDeployHook: python manage.py createsuperuser --noinput
+    initialDeployHook: python manage.py bootstrap_render_admin
     healthCheckPath: /
+    autoDeployTrigger: commit
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -21,11 +24,18 @@ services:
         value: "true"
       - key: DJANGO_TRUST_PROXY_SSL
         value: "true"
-      - key: CHANNEL_LAYER
-        value: memory
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: DB_SSLMODE
+        value: require
       - key: DATABASE_URL
         fromDatabase:
           name: ceobef-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: ceobef-kv
+          type: keyvalue
           property: connectionString
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
@@ -48,6 +58,13 @@ services:
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
 
+  - type: keyvalue
+    name: ceobef-kv
+    plan: free
+    region: oregon
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
 databases:
   - name: ceobef-db
     databaseName: ceobef
@@ -55,3 +72,4 @@ databases:
     plan: free
     region: oregon
     diskSizeGB: 1
+    postgresMajorVersion: "17"

@@ -87,4 +87,4 @@ Lire [docs/INSTALLATION.md](docs/INSTALLATION.md) pour les variables, PostgreSQL
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) pour les relations entre tables, le RBAC et les flux WebSocket/SMTP.
 
-Le fichier `render.yaml` prépare un déploiement Render gratuit de démonstration. Le plan gratuit ne convient pas à l’exploitation durable de CEOBEF : sa base expire après 30 jours, son stockage média est éphémère et Render bloque le SMTP Gmail sortant sur le port 587. Voir les limites et la procédure dans [docs/INSTALLATION.md](docs/INSTALLATION.md).
+Le Blueprint [render.yaml](render.yaml) prépare un déploiement Render Free de démonstration. Il n’est pas adapté à la conservation des données : PostgreSQL expire après 30 jours, les médias sont éphémères et Render bloque le SMTP Gmail sortant sur le port 587. Consulter les limitations et la procédure avant de connecter le dépôt.
