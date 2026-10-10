@@ -7,7 +7,6 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect, render
 
-from accounts.models import User
 from community.models import Notification
 from core.permissions import permissions_required
 from .forms import ContributionForm
